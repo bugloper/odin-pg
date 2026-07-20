@@ -1,0 +1,13 @@
+# Build artifacts
+*.bin
+*.exe
+*.o
+*.obj
+*.dSYM/
+odin-pg
+ols.json.local
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
