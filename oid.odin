@@ -1,0 +1,45 @@
+package pg
+
+// Oid is a PostgreSQL object identifier. The constants below are the
+// pg_type OIDs of the built-in types this driver ships codecs for; they are
+// stable across all supported server versions.
+Oid :: distinct u32
+
+BOOL :: Oid(16)
+BYTEA :: Oid(17)
+CHAR :: Oid(18)
+NAME :: Oid(19)
+INT8 :: Oid(20)
+INT2 :: Oid(21)
+INT4 :: Oid(23)
+TEXT :: Oid(25)
+OID :: Oid(26)
+JSON :: Oid(114)
+FLOAT4 :: Oid(700)
+FLOAT8 :: Oid(701)
+BPCHAR :: Oid(1042)
+VARCHAR :: Oid(1043)
+DATE :: Oid(1082)
+TIME :: Oid(1083)
+TIMESTAMP :: Oid(1114)
+TIMESTAMPTZ :: Oid(1184)
+INTERVAL :: Oid(1186)
+NUMERIC :: Oid(1700)
+UUID :: Oid(2950)
+JSONB :: Oid(3802)
+
+BOOL_ARRAY :: Oid(1000)
+BYTEA_ARRAY :: Oid(1001)
+INT2_ARRAY :: Oid(1005)
+INT4_ARRAY :: Oid(1007)
+TEXT_ARRAY :: Oid(1009)
+VARCHAR_ARRAY :: Oid(1015)
+INT8_ARRAY :: Oid(1016)
+FLOAT4_ARRAY :: Oid(1021)
+FLOAT8_ARRAY :: Oid(1022)
+TIMESTAMP_ARRAY :: Oid(1115)
+DATE_ARRAY :: Oid(1182)
+TIMESTAMPTZ_ARRAY :: Oid(1185)
+NUMERIC_ARRAY :: Oid(1231)
+UUID_ARRAY :: Oid(2951)
+JSONB_ARRAY :: Oid(3807)
