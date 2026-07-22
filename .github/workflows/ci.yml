@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  unit:
     strategy:
       fail-fast: false
       matrix:
@@ -19,5 +19,43 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check
         run: odin check . -vet -strict-style -no-entry-point
-      - name: Test
+      - name: Check OpenSSL bindings
+        run: odin check openssl -vet -no-entry-point
+      - name: Codec purity (proto_*.odin must not touch the network)
+        run: '! grep -l "core:net" proto_*.odin'
+      - name: Unit tests
         run: odin test .
+
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # PG 14 is the oldest supported (first with scram-sha-256 default);
+        # 18 is current.
+        pg: ["14", "16", "18"]
+    env:
+      PG_VERSION: ${{ matrix.pg }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install libssl
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev
+      - name: Pin postgres version in compose file
+        run: sed -i "s/postgres:18-alpine/postgres:${PG_VERSION}-alpine/" tests/docker-compose.yml
+      - name: Start databases
+        run: docker compose -f tests/docker-compose.yml up -d --wait
+      - name: Extract TLS server certificate
+        run: docker compose -f tests/docker-compose.yml exec pg-tls cat /var/lib/postgresql/server.crt > /tmp/odin-pg-server.crt
+      - name: Integration tests
+        env:
+          PG_TEST_DSN: postgres://odin:odin_pg_test@localhost:5435/odin_pg_test
+          PG_TEST_DSN_MD5: postgres://odin:odin_pg_test@localhost:5434/odin_pg_test
+        run: odin test tests/integration
+      - name: TLS integration tests
+        env:
+          PG_TEST_DSN_TLS: postgres://odin:odin_pg_test@localhost:5436/odin_pg_test
+          PG_TEST_TLS_CERT: /tmp/odin-pg-server.crt
+        run: odin test tests/integration_tls
