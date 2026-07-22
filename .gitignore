@@ -11,3 +11,6 @@ ols.json.local
 .DS_Store
 .idea/
 .vscode/
+examples/vendor/
+/bench
+/web
