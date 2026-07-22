@@ -1,0 +1,77 @@
+# Integration-test databases for odin-pg.
+#
+#   docker compose -f tests/docker-compose.yml up -d
+#
+# pg-scram: modern default auth (scram-sha-256), the primary target.
+# pg-md5:   legacy md5 auth fallback coverage.
+services:
+  pg-scram:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: odin
+      POSTGRES_PASSWORD: odin_pg_test
+      POSTGRES_DB: odin_pg_test
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    ports:
+      # Nonstandard host ports: developer machines often run their own
+      # Postgres on 5432/5433.
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odin -d odin_pg_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  pg-tls:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: odin
+      POSTGRES_PASSWORD: odin_pg_test
+      POSTGRES_DB: odin_pg_test
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    ports:
+      - "5436:5432"
+    # Generate a self-signed cert (CN=localhost) at startup, then run with
+    # ssl=on. Extract the cert for verify-full tests with:
+    #   docker compose -f tests/docker-compose.yml exec pg-tls \
+    #     cat /var/lib/postgresql/server.crt > /tmp/odin-pg-server.crt
+    command:
+      - sh
+      - -c
+      - |
+        if [ ! -f /var/lib/postgresql/server.key ]; then
+          apk add --no-cache openssl >/dev/null
+          openssl req -new -x509 -days 3650 -nodes -text \
+            -out /var/lib/postgresql/server.crt \
+            -keyout /var/lib/postgresql/server.key \
+            -subj "/CN=localhost"
+          chown postgres:postgres /var/lib/postgresql/server.*
+          chmod 600 /var/lib/postgresql/server.key
+        fi
+        exec docker-entrypoint.sh postgres \
+          -c ssl=on \
+          -c ssl_cert_file=/var/lib/postgresql/server.crt \
+          -c ssl_key_file=/var/lib/postgresql/server.key
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odin -d odin_pg_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  pg-md5:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: odin
+      POSTGRES_PASSWORD: odin_pg_test
+      POSTGRES_DB: odin_pg_test
+      POSTGRES_INITDB_ARGS: --auth-host=md5
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odin -d odin_pg_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
